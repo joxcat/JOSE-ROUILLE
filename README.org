@@ -1,0 +1,6 @@
+* JOSÉ-ROUILLE, JOSÉ pour la [[https://www.rust-lang.org/][Rouille]]
+
+Projet créé par dessus les spécifications de JOSÉ : [[https://github.com/mathis-chapuis/JOSE]]
+
+L'implémentation suit les [[https://fr.wikipedia.org/wiki/Request_for_comments][Attentes De Commentaires]] suivantes :
+ 1. [[ADCs/14071789-RFCJose-premier-avril-deux-mille-vingt-et-un.pdf][ADC 14071789]]
