@@ -31,5 +31,7 @@
 // crate-specific exceptions:
 #![allow()]
 
-pub mod errors;
-pub mod types;
+fn main() {
+    human_panic::setup_panic!();
+    println!("Hello World!");
+}
