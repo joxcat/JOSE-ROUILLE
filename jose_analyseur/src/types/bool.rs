@@ -3,10 +3,20 @@ use crate::types::{IResult, JoseType, ParseValue};
 use nom::bytes::complete::take_while1;
 use nom::error::context;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Bool {
     Vrai,
     Faux,
+}
+
+impl From<bool> for Bool {
+    fn from(from: bool) -> Self {
+        if from {
+            Self::Vrai
+        } else {
+            Self::Faux
+        }
+    }
 }
 
 impl<'a, 'b> ParseValue<'a, 'b> for Bool {

@@ -1,9 +1,9 @@
 use super::JoseType;
-use crate::types::{IResult, ParseValue};
+use crate::types::{IResult, ParseValue, parse_spaces_and_newlines};
 use nom::bytes::complete::tag;
 use nom::error::context;
 use nom::multi::separated_list0;
-use nom::sequence::delimited;
+use nom::sequence::{delimited, tuple};
 
 #[non_exhaustive]
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -17,19 +17,25 @@ impl<'a, 'b> From<Vec<JoseType<'a, 'b>>> for Table<'a, 'b> {
     }
 }
 
-const TABLE_DELIM_BEGIN: &str = "DÉBUT ";
-const TABLE_DELIM_END: &str = " FIN";
+const TABLE_DELIM_BEGIN: &str = "DÉBUT";
+const TABLE_DELIM_END: &str = "FIN";
 const SEPARATOR: &str = " ; ";
 
-impl<'a, 'b> ParseValue<'a, 'b> for Table<'a, 'b> {
+impl<'a> ParseValue<'a, 'a> for Table<'a, 'a> {
     type Input = &'a str;
-    fn parse(input: Self::Input) -> IResult<Self::Input, JoseType<'a, 'b>> {
+    fn parse(input: Self::Input) -> IResult<Self::Input, JoseType<'a, 'a>> {
         context(
             "nom parsing table",
             delimited(
-                tag(TABLE_DELIM_BEGIN),
+                tuple((
+                    tag(TABLE_DELIM_BEGIN),
+                    parse_spaces_and_newlines,
+                )),
                 separated_list0(tag(SEPARATOR), JoseType::parse),
-                tag(TABLE_DELIM_END),
+                tuple((
+                    parse_spaces_and_newlines,
+                    tag(TABLE_DELIM_END),
+                )),
             ),
         )(input)
         .map(|(next_input, res)| (next_input, JoseType::Table(Table { inner: res })))

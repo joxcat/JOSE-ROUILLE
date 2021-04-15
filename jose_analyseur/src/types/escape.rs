@@ -3,7 +3,7 @@ use nom::bytes::complete::{tag, take};
 use nom::error::context;
 use nom::sequence::preceded;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Escape {
     inner: char,
 }

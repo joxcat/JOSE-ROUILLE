@@ -16,11 +16,11 @@ use nom::branch::alt;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Object<'a, 'b> {
     gender: Gender,
-    inner: HashMap<Cow<'a, str>, JoseType<'b, 'b>>,
+    inner: HashMap<Cow<'a, str>, (JoseType<'b, 'b>, bool)>,
 }
 
-impl<'a, 'b> From<(Gender, HashMap<Cow<'a, str>, JoseType<'b, 'b>>)> for Object<'a, 'b> {
-    fn from(from: (Gender, HashMap<Cow<'a, str>, JoseType<'b, 'b>>)) -> Self {
+impl<'a, 'b> From<(Gender, HashMap<Cow<'a, str>, (JoseType<'b, 'b>, bool)>)> for Object<'a, 'b> {
+    fn from(from: (Gender, HashMap<Cow<'a, str>, (JoseType<'b, 'b>, bool)>)) -> Self {
         Object {
             gender: from.0,
             inner: from.1,
@@ -33,9 +33,9 @@ const OBJECT_DELIM_END: &str = "TEJBO";
 const LINE_SEPARATOR: &str = " ;";
 const OBJECT_LAST_LINE: &str = ".";
 
-impl<'a, 'b> ParseValue<'a, 'b> for Object<'a, 'b> {
+impl<'a> ParseValue<'a, 'a> for Object<'a, 'a> {
     type Input = &'a str;
-    fn parse(input: Self::Input) -> IResult<Self::Input, JoseType<'a, 'b>> {
+    fn parse(input: Self::Input) -> IResult<Self::Input, JoseType<'a, 'a>> {
         context(
             "nom parsing object",
             delimited(
@@ -52,16 +52,20 @@ impl<'a, 'b> ParseValue<'a, 'b> for Object<'a, 'b> {
                 tag(OBJECT_DELIM_END),
             ),
         )(input)
-        .map(|(next_input, res)| {
-            dbg!(res.clone());
-            (
-                next_input,
-                JoseType::Object(Object {
-                    gender: res.0,
-                    inner: HashMap::new(),
-                }),
-            )
-        })
+        .map(|(next_input, res)| (
+            next_input,
+            JoseType::Object(Object {
+                gender: res.0,
+                inner: res.2
+                    .into_iter()
+                    .map(|(kv, end, _)| (kv.key, (kv.value, match end {
+                        OBJECT_LAST_LINE => true,
+                        LINE_SEPARATOR => false,
+                        _ => panic!("An end of line character of one of your objects crashed the parser"),
+                    })))
+                    .collect(),
+            }),
+        ))
     }
 }
 
@@ -70,12 +74,24 @@ mod tests {
     use super::{Object, Gender};
     use crate::types::{JoseType, ParseValue};
     use std::collections::HashMap;
+    use std::borrow::Cow;
 
     #[test]
     fn test_parse_kv() {
         assert_eq!(
             Object::parse("OBJET Féminin TEJBO").unwrap(),
             ("", JoseType::Object((Gender::Feminine, HashMap::new()).into())),
+        );
+        assert_eq!(
+            Object::parse("OBJET Masculin
+            — « Écoles ouvertes » : Faux ;
+            — « départements confinés » :
+                DÉBUT « Seine-Maritime » FIN.
+        TEJBO").unwrap(),
+            ("", JoseType::Object((Gender::Masculine, vec![
+                (Cow::from(" départements confinés "), (JoseType::from(vec![" Seine-Maritime ".into()]), true)),
+                (Cow::from(" Écoles ouvertes "), (JoseType::from(false), false)),
+            ].into_iter().collect()).into())),
         );
     }
 

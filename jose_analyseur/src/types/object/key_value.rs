@@ -7,8 +7,8 @@ use std::borrow::Cow;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct KeyValue<'a, 'b> {
-    key: Cow<'a, str>,
-    value: JoseType<'a, 'b>,
+    pub key: Cow<'a, str>,
+    pub value: JoseType<'a, 'b>,
 }
 
 impl<'a, 'b> From<(&'a str, JoseType<'a, 'b>)> for KeyValue<'a, 'b> {
@@ -21,16 +21,22 @@ impl<'a, 'b> From<(&'a str, JoseType<'a, 'b>)> for KeyValue<'a, 'b> {
 }
 
 const KEY_PREFIX: &str = "— ";
-const VALUE_PREFIX: &str = ": ";
+const VALUE_PREFIX: &str = ":";
 
-impl<'a, 'b> KeyValue<'a, 'b> {
-    pub(crate) fn parse(input: &'a str) -> IResult<&str, Self> {
+impl<'a> KeyValue<'a, 'a> {
+    pub fn parse(input: &'a str) -> IResult<&str, Self> {
         context(
             "nom parsing key_value",
             tuple((
-                preceded(tag(KEY_PREFIX), string::String::parse),
+                preceded(
+                    tuple((tag(KEY_PREFIX), parse_spaces_and_newlines)),
+                    string::String::parse,
+                ),
                 parse_spaces_and_newlines,
-                preceded(tag(VALUE_PREFIX), JoseType::parse),
+                preceded(
+                    tuple((tag(VALUE_PREFIX), parse_spaces_and_newlines)),
+                JoseType::parse
+                ),
             )),
         )(input)
         .and_then(|(next_input, res)| match res.0 {
@@ -62,13 +68,34 @@ mod tests {
         );
         assert_eq!(
             KeyValue::parse(
-                "— « Écoles espacees » : \
-            DÉBUT  FIN"
+                "— « Écoles espacées » :\
+            DÉBUT FIN"
             )
             .unwrap(),
             (
                 "",
-                KeyValue::from((" Écoles espacees ", JoseType::Table(Vec::new().into())))
+                KeyValue::from((" Écoles espacées ", JoseType::Table(Vec::new().into())))
+            )
+        );
+        assert_eq!(
+            KeyValue::parse(
+                "— « Écoles anglisées » :\
+            DÉBUT « Eure » ; « Rhône » FIN"
+            )
+                .unwrap(),
+            (
+                "",
+                KeyValue::from((" Écoles anglisées ", JoseType::Table(vec![" Eure ".into(), " Rhône ".into()].into())))
+            )
+        );
+        assert_eq!(
+            KeyValue::parse(
+                "— « vaccins » : huit millions quatre mille neuf cent cinquante-huit"
+            )
+                .unwrap(),
+            (
+                "",
+                KeyValue::from((" vaccins ", JoseType::Integer("huit millions quatre mille neuf cent cinquante-huit".into())))
             )
         );
     }

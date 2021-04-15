@@ -21,7 +21,7 @@ impl<'a, 'b> ParseValue<'a, 'b> for Integer<'b> {
     fn parse(input: Self::Input) -> IResult<Self::Input, JoseType<'a, 'b>> {
         context(
             "nom parsing integer value",
-            take_while1(|c: char| c.is_alphabetic() || c.is_whitespace() || c == '-'),
+            take_while1(|c: char| (c.is_alphabetic() && c.is_lowercase()) || c.is_whitespace() || c == '-'),
         )(input)
         .map(|(next_input, res)| (next_input, JoseType::Integer(Integer::from(res))))
     }

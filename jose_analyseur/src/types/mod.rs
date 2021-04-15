@@ -39,9 +39,9 @@ pub trait ParseValue<'a, 'b> {
     fn parse(input: Self::Input) -> IResult<Self::Input, JoseType<'a, 'b>>;
 }
 
-impl<'a, 'b> ParseValue<'a, 'b> for JoseType<'a, 'b> {
+impl<'a> ParseValue<'a, 'a> for JoseType<'a, 'a> {
     type Input = &'a str;
-    fn parse(input: Self::Input) -> IResult<Self::Input, JoseType<'a, 'b>> {
+    fn parse(input: Self::Input) -> IResult<Self::Input, JoseType<'a, 'a>> {
         context(
             "nom parsing jose",
             alt((
@@ -50,7 +50,85 @@ impl<'a, 'b> ParseValue<'a, 'b> for JoseType<'a, 'b> {
                 escape::Escape::parse,
                 string::String::parse,
                 table::Table::parse,
+                object::Object::parse,
+                integer::Integer::parse
             )),
         )(input)
+    }
+}
+
+impl<'a, 'b> From<&'a str> for JoseType<'a, 'b> {
+    fn from(from: &'a str) -> Self {
+        JoseType::String(string::String::from(from))
+    }
+}
+
+impl<'a, 'b> From<bool> for JoseType<'a, 'b> {
+    fn from(from: bool) -> Self {
+        JoseType::Bool(bool::Bool::from(from))
+    }
+}
+
+impl<'a, 'b> From<Vec<JoseType<'a, 'b>>> for JoseType<'a, 'b> {
+    fn from(from: Vec<JoseType<'a, 'b>>) -> Self {
+        JoseType::Table(table::Table::from(from))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::types::{JoseType, ParseValue};
+
+    #[test]
+    fn test_parse_jose() {
+        /*dbg!(JoseType::parse("OBJET Masculin
+    — « Confinement » : Vrai ;
+    — « vaccins » : huit millions quatre mille neuf cent cinquante-huit ;
+    — « restrictions » :
+        OBJET Féminin
+            — « Écoles ouvertes » : Faux ;
+            — « départements confinés » :
+                DÉBUT « Seine-Maritime » ; « Eure » ; « Rhône » FIN.
+        TEJBO ;
+    — « motivation » : nulle.
+TEJBO"));*/
+        /*assert_eq!(
+            JoseType::parse("OBJET Masculin
+    — « Confinement » : Vrai ;
+    — « vaccins » : huit millions quatre mille neuf cent cinquante-huit ;
+    — « restrictions » :
+        OBJET Féminin
+            — « Écoles ouvertes » : Faux ;
+            — « départements confinés » :
+                DÉBUT « Seine-Maritime » ; « Eure » ; « Rhône » FIN.
+        TEJBO ;
+    — « motivation » : nulle.
+TEJBO
+").unwrap(),
+            ("", JoseType::Object(object::Object::from((
+                object::Gender::Masculine,
+                vec![
+                    (Cow::from(" motivation "), (JoseType::Null("nulle".into()), true)),
+                    (Cow::from(" restrictions "), (JoseType::Object(object::Object::from((
+                        object::Gender::Feminine,
+                        vec![
+                            (Cow::from(" départements confinés "),  (JoseType::Table(vec![
+                                " Seine-Maritime ".into(),
+                                " Eure ".into(),
+                                " Rhône ".into(),
+                            ].into()), true)),
+                            (Cow::from(" Écoles ouvertes "),  (JoseType::Bool(false.into()), false)),
+                        ].into_iter().collect()
+                    ))), false)),
+                    (Cow::from(" vaccins "),  (JoseType::String("huit millions quatre mille neuf cent cinquante-huit ".into()), false)),
+                    (Cow::from(" Confinement "),  (JoseType::Bool(true.into()), false)),
+                ].into_iter().collect()
+            ))))
+        );*/
+    }
+
+    #[test]
+    fn test_parse_jose_error() {
+        assert!(JoseType::parse("NOTJOSÉ").err().is_some());
     }
 }

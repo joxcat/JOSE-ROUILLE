@@ -32,7 +32,7 @@ impl<'a> From<JoseError> for nom::Err<VerboseJoseError> {
         #[allow(clippy::match_single_binding)]
         match from {
             _ => Self::Error(VerboseJoseError {
-                errors: vec![(from, VerboseErrorKind::Context("JOSE initial error"))],
+                errors: vec![(from, VerboseErrorKind::Context("JOSÉ initial error"))],
             }),
         }
     }
@@ -57,7 +57,7 @@ impl AppendToVerboseError for nom::Err<VerboseJoseError> {
         self.map(|e| VerboseJoseError {
             errors: [
                 e.errors,
-                vec![(err, VerboseErrorKind::Context("JOSE appended error")); 1],
+                vec![(err, VerboseErrorKind::Context("JOSÉ appended error")); 1],
             ]
             .concat(),
         })
