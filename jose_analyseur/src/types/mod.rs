@@ -77,22 +77,12 @@ impl<'a, 'b> From<Vec<JoseType<'a, 'b>>> for JoseType<'a, 'b> {
 
 #[cfg(test)]
 mod tests {
-    use crate::types::{JoseType, ParseValue};
+    use crate::types::{JoseType, ParseValue, object};
+    use std::borrow::Cow;
 
     #[test]
     fn test_parse_jose() {
-        /*dbg!(JoseType::parse("OBJET Masculin
-    — « Confinement » : Vrai ;
-    — « vaccins » : huit millions quatre mille neuf cent cinquante-huit ;
-    — « restrictions » :
-        OBJET Féminin
-            — « Écoles ouvertes » : Faux ;
-            — « départements confinés » :
-                DÉBUT « Seine-Maritime » ; « Eure » ; « Rhône » FIN.
-        TEJBO ;
-    — « motivation » : nulle.
-TEJBO"));*/
-        /*assert_eq!(
+        assert_eq!(
             JoseType::parse("OBJET Masculin
     — « Confinement » : Vrai ;
     — « vaccins » : huit millions quatre mille neuf cent cinquante-huit ;
@@ -103,12 +93,12 @@ TEJBO"));*/
                 DÉBUT « Seine-Maritime » ; « Eure » ; « Rhône » FIN.
         TEJBO ;
     — « motivation » : nulle.
-TEJBO
-").unwrap(),
+TEJBO").unwrap(),
             ("", JoseType::Object(object::Object::from((
                 object::Gender::Masculine,
                 vec![
-                    (Cow::from(" motivation "), (JoseType::Null("nulle".into()), true)),
+                    (Cow::from(" Confinement "),  (JoseType::Bool(true.into()), false)),
+                    (Cow::from(" vaccins "),  (JoseType::Integer("huit millions quatre mille neuf cent cinquante-huit ".into()), false)),
                     (Cow::from(" restrictions "), (JoseType::Object(object::Object::from((
                         object::Gender::Feminine,
                         vec![
@@ -120,11 +110,10 @@ TEJBO
                             (Cow::from(" Écoles ouvertes "),  (JoseType::Bool(false.into()), false)),
                         ].into_iter().collect()
                     ))), false)),
-                    (Cow::from(" vaccins "),  (JoseType::String("huit millions quatre mille neuf cent cinquante-huit ".into()), false)),
-                    (Cow::from(" Confinement "),  (JoseType::Bool(true.into()), false)),
+                    (Cow::from(" motivation "), (JoseType::Null("nulle".into()), true)),
                 ].into_iter().collect()
             ))))
-        );*/
+        );
     }
 
     #[test]

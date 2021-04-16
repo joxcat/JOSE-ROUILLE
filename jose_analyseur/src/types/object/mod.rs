@@ -30,7 +30,7 @@ impl<'a, 'b> From<(Gender, HashMap<Cow<'a, str>, (JoseType<'b, 'b>, bool)>)> for
 
 const OBJECT_DELIM_BEGIN: &str = "OBJET ";
 const OBJECT_DELIM_END: &str = "TEJBO";
-const LINE_SEPARATOR: &str = " ;";
+const LINE_SEPARATOR: &str = ";";
 const OBJECT_LAST_LINE: &str = ".";
 
 impl<'a> ParseValue<'a, 'a> for Object<'a, 'a> {
@@ -45,6 +45,7 @@ impl<'a> ParseValue<'a, 'a> for Object<'a, 'a> {
                     parse_spaces_and_newlines,
                     many0(tuple((
                         key_value::KeyValue::parse,
+                        parse_spaces_and_newlines,
                         alt((tag(LINE_SEPARATOR), tag(OBJECT_LAST_LINE))),
                         parse_spaces_and_newlines,
                     ))),
@@ -58,7 +59,7 @@ impl<'a> ParseValue<'a, 'a> for Object<'a, 'a> {
                 gender: res.0,
                 inner: res.2
                     .into_iter()
-                    .map(|(kv, end, _)| (kv.key, (kv.value, match end {
+                    .map(|(kv, _, end, _)| (kv.key, (kv.value, match end {
                         OBJECT_LAST_LINE => true,
                         LINE_SEPARATOR => false,
                         _ => panic!("An end of line character of one of your objects crashed the parser"),
@@ -84,10 +85,10 @@ mod tests {
         );
         assert_eq!(
             Object::parse("OBJET Masculin
-            — « Écoles ouvertes » : Faux ;
-            — « départements confinés » :
-                DÉBUT « Seine-Maritime » FIN.
-        TEJBO").unwrap(),
+    — « Écoles ouvertes » : Faux ;
+    — « départements confinés » :
+        DÉBUT « Seine-Maritime » FIN.
+TEJBO").unwrap(),
             ("", JoseType::Object((Gender::Masculine, vec![
                 (Cow::from(" départements confinés "), (JoseType::from(vec![" Seine-Maritime ".into()]), true)),
                 (Cow::from(" Écoles ouvertes "), (JoseType::from(false), false)),
